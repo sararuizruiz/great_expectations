@@ -95,7 +95,7 @@ class ExpectColumnValueEntropyToBeLessThan(ColumnMapExpectation):
             # Ensuring Z-score Threshold metric has been properly provided
             assert (
                 "threshold" in configuration.kwargs
-            ), "A Z-score threshold must be provided"
+            ), "A threshold must be provided"
             assert isinstance(
                 configuration.kwargs["threshold"], (float, int, dict)
             ), "Provided threshold must be a number"
@@ -104,9 +104,9 @@ class ExpectColumnValueEntropyToBeLessThan(ColumnMapExpectation):
                     "$PARAMETER" in configuration.kwargs["threshold"]
                 ), 'Evaluation Parameter dict for threshold kwarg must have "$PARAMETER" key.'
 
-            assert isinstance(
-                configuration.kwargs["double_sided"], (bool, dict)
-            ), "Double sided parameter must be a boolean value"
+            assert "method" not in configuration.kwargs or isinstance(
+                configuration.kwargs["method"], (bool, dict)
+            ), "Provided method argument must be a string"
             if isinstance(configuration.kwargs["double_sided"], dict):
                 assert (
                     "$PARAMETER" in configuration.kwargs["double_sided"]

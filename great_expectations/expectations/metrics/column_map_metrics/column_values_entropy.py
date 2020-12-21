@@ -45,6 +45,21 @@ class ColumnValuesEntropy(ColumnMapMetricProvider):
                 )
             )
 
+    def _pandas_kde_entropy(self, column, kernel, train):
+        raise NotImplementedError
+
+    def _pandas_prophet_entropy(self, column, train, country = "us"):
+        raise NotImplementedError
+
+    def _pandas_categorical_entropy(self, column, to_look_for = None):
+        # Syntax list
+        default_syntax_list = [".", ",", "*"]
+        if to_look_for is not None:
+            default_syntax_list.append(to_look_for)
+
+    def _pandas_bootstrap_entropy(self, column, **bootstrap_kwargs):
+        raise NotImplementedError
+
     @column_condition_partial(engine=PandasExecutionEngine)
     def _pandas_condition(
         cls, column, _metrics, threshold, double_sided, **kwargs
@@ -60,40 +75,6 @@ class ColumnValuesEntropy(ColumnMapMetricProvider):
             raise (
                 TypeError("Cannot check if a string lies under a numerical threshold")
             )
-
-    @column_function_partial(engine=SqlAlchemyExecutionEngine)
-    def _sqlalchemy_function(cls, column, _metrics, _dialect, **kwargs):
-        mean = _metrics["column.mean"]
-        standard_deviation = _metrics["column.standard_deviation"]
-        return (column - mean) / standard_deviation
-
-    @column_condition_partial(engine=SqlAlchemyExecutionEngine)
-    def _sqlalchemy_condition(cls, column, _metrics, threshold, double_sided, **kwargs):
-
-        z_score, _, _ = _metrics["column_values.z_score.map"]
-        if double_sided:
-            under_threshold = sa.func.abs(z_score) < abs(threshold)
-        else:
-            under_threshold = z_score < threshold
-
-        return under_threshold
-
-    @column_function_partial(engine=SparkDFExecutionEngine)
-    def _spark_function(cls, column, _metrics, **kwargs):
-        mean = _metrics["column.mean"]
-        standard_deviation = _metrics["column.standard_deviation"]
-
-        return (column - mean) / standard_deviation
-
-    @column_condition_partial(engine=SparkDFExecutionEngine)
-    def _spark_condition(cls, column, _metrics, threshold, double_sided, **kwargs):
-        z_score, _, _ = _metrics["column_values.z_score.map"]
-
-        if double_sided:
-            threshold = abs(threshold)
-            z_score = F.abs(z_score)
-
-        return z_score < threshold
 
     @classmethod
     def _get_evaluation_dependencies(
