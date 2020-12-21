@@ -23,7 +23,8 @@ class ExpectColumnValueEntropyToBeLessThan(ColumnMapExpectation):
                 column (str): \
                     The column name of a numerical column.
                 threshold (number): \
-                    A maximum Z-score threshold. All column Z-scores that are lower than this threshold will evaluate
+                    A maximum entropy threshold in the interval [0,100], which can be interpreted as the Likelihood of anomaly.
+                    All column entropy values that are lower than this threshold (less anomalous than it) will evaluate
                     successfully.
 
 
@@ -31,11 +32,29 @@ class ExpectColumnValueEntropyToBeLessThan(ColumnMapExpectation):
                 mostly (None or a float between 0 and 1): \
                     Return `"success": True` if at least mostly fraction of values match the expectation. \
                     For more detail, see :ref:`mostly`.
-                double_sided (boolean): \
-                    A True of False value indicating whether to evaluate double sidedly.
-                    Example:
-                    double_sided = True, threshold = 2 -> Z scores in non-inclusive interval(-2,2)
-                    double_sided = False, threshold = 2 -> Z scores in non-inclusive interval (-infinity,2)
+                method (string): \
+                    A string value indicating the method to be used in the estimation of entropy. Potential values are the
+                    following:
+
+                    "bootstrap" - using a training set, the model will build an expectation for categorical value counts
+                    and estimate entropy via divergence from this Expectation. Values that are found far more or less
+                    often in the dataset than Expected would be considered anomalous.
+
+                    "kde" - Using a Kernel Density approximation, the model will consider the least dense areas of a density
+                    plot (locations where there are very few or no values in the vicinity) most anomalous. Can also provide
+                    a training set and base anomaly on densities that are most different between the train and test set.
+
+                    "prophet" - using the TimeSeries model "Facebook prophet", the model will approximate Time Series
+                    trends based on regular intervals (hour of day, day of week) while also taking into account
+                    extraordinary events (such as holidays) in building an approximation of categorical value counts
+                    within the "future". The deviation from these expected future counts will be used to compute entropy
+
+                    "categorical" - learning the presence of certain syntax patterns within each categorical value
+                    within the column, the model will build Expectations for which rules the data follows more or less
+                    often. The more and stricter the rules that a data point breaks, the more anomalous and "entropic" it
+                    will be considered.
+
+                    "
 
 
             Other Parameters:
@@ -61,14 +80,14 @@ class ExpectColumnValueEntropyToBeLessThan(ColumnMapExpectation):
 
     # Setting necessary computation metric dependencies and defining kwargs, as well as assigning kwargs default values\
     map_metric = "column_values.entropy.under_threshold"
-    success_keys = ("threshold", "double_sided", "mostly")
+    success_keys = ("threshold", "method", "mostly")
 
     # Default values
     default_kwarg_values = {
         "row_condition": None,
         "condition_parser": None,
         "threshold": None,
-        "double_sided": True,
+        "method": "kde",
         "mostly": 1,
         "result_format": "BASIC",
         "include_config": True,
@@ -92,7 +111,7 @@ class ExpectColumnValueEntropyToBeLessThan(ColumnMapExpectation):
         if configuration is None:
             configuration = self.configuration
         try:
-            # Ensuring Z-score Threshold metric has been properly provided
+            # Ensuring entropy threshold properly provided
             assert (
                 "threshold" in configuration.kwargs
             ), "A threshold must be provided"
@@ -107,10 +126,6 @@ class ExpectColumnValueEntropyToBeLessThan(ColumnMapExpectation):
             assert "method" not in configuration.kwargs or isinstance(
                 configuration.kwargs["method"], (bool, dict)
             ), "Provided method argument must be a string"
-            if isinstance(configuration.kwargs["double_sided"], dict):
-                assert (
-                    "$PARAMETER" in configuration.kwargs["double_sided"]
-                ), 'Evaluation Parameter dict for double_sided kwarg must have "$PARAMETER" key.'
         except AssertionError as e:
             raise InvalidExpectationConfigurationError(str(e))
         return True
