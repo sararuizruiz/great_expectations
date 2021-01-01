@@ -28,6 +28,7 @@ class ExpectColumnValueEntropyToBeLessThan(ColumnMapExpectation):
                     successfully.
 
 
+
             Keyword Args:
                 mostly (None or a float between 0 and 1): \
                     Return `"success": True` if at least mostly fraction of values match the expectation. \
@@ -44,17 +45,12 @@ class ExpectColumnValueEntropyToBeLessThan(ColumnMapExpectation):
                     plot (locations where there are very few or no values in the vicinity) most anomalous. Can also provide
                     a training set and base anomaly on densities that are most different between the train and test set.
 
-                    "prophet" - using the TimeSeries model "Facebook prophet", the model will approximate Time Series
-                    trends based on regular intervals (hour of day, day of week) while also taking into account
-                    extraordinary events (such as holidays) in building an approximation of categorical value counts
-                    within the "future". The deviation from these expected future counts will be used to compute entropy
-
                     "categorical" - learning the presence of certain syntax patterns within each categorical value
                     within the column, the model will build Expectations for which rules the data follows more or less
                     often. The more and stricter the rules that a data point breaks, the more anomalous and "entropic" it
                     will be considered.
 
-                    "
+
 
 
             Other Parameters:
@@ -80,13 +76,14 @@ class ExpectColumnValueEntropyToBeLessThan(ColumnMapExpectation):
 
     # Setting necessary computation metric dependencies and defining kwargs, as well as assigning kwargs default values\
     map_metric = "column_values.entropy.under_threshold"
-    success_keys = ("threshold", "method", "mostly")
+    success_keys = ("threshold", "method", "double_sided", "mostly")
 
     # Default values
     default_kwarg_values = {
         "row_condition": None,
         "condition_parser": None,
         "threshold": None,
+        "double_sided": True,
         "method": "kde",
         "mostly": 1,
         "result_format": "BASIC",
