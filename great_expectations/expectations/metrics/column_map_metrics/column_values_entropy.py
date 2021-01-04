@@ -28,7 +28,7 @@ class ColumnValuesEntropy(ColumnMapMetricProvider):
         "double_sided",
         "threshold",
     )
-    default_kwarg_values = {"threshold": None, "method": "kde",}
+    default_kwarg_values = {"threshold": None, "method": "kde"}
 
     @column_condition_partial(engine=PandasExecutionEngine)
     def _pandas_condition(
