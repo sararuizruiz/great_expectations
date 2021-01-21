@@ -182,28 +182,15 @@ class ConfiguredAssetSqlDataConnector(DataConnector):
             )
         ]
 
-    def build_batch_spec(self, batch_definition: BatchDefinition):
-        """
-        Build BatchSpec from batch_definition with the following components:
-            1. data_asset_name from batch_definition
-            2. partition_definition from batch_definition
-            3. data_asset from data_connector
-
-        Args:
-            batch_definition (BatchDefinition): to be used to build batch_spec
-
-        Returns:
-            BatchSpec built from batch_definition
-        """
+    def _generate_batch_spec_parameters_from_batch_definition(
+        self, batch_definition: BatchDefinition
+    ):
         data_asset_name = batch_definition.data_asset_name
-        batch_spec = BatchSpec(
-            {
-                "table_name": data_asset_name,
-                "partition_definition": batch_definition.partition_definition,
-                **self.data_assets[data_asset_name],
-            }
-        )
-        return batch_spec
+        return {
+            "table_name": data_asset_name,
+            "partition_definition": batch_definition.partition_definition,
+            **self.data_assets[data_asset_name],
+        }
 
     ### Splitter methods for listing partitions ###
 
@@ -211,8 +198,7 @@ class ConfiguredAssetSqlDataConnector(DataConnector):
         self,
         table_name: str,
     ):
-        """
-        'Split' by returning the whole table
+        """'Split' by returning the whole table
 
         Note: the table_name parameter is a required to keep the signature of this method consistent with other methods.
         """

@@ -7,6 +7,12 @@ Changelog
 Develop
 -----------------
 * [BUGFIX] Fix Local variable 'query_schema' might be referenced before assignment bug in sqlalchemy_dataset.py
+* [ENHANCEMENT] BatchData in the new Datasource API is now more fully implemented, and exposes a `dataframe` or `
+selectable` property, instead of exposing a raw data object. Similarly, it exposes an execution_engine property,
+which is suitable for instantiating a Validator to produce metrics directly from a Batch. We intend to continue to
+update BatchData as part of our plans to support Validations involving multiple tables, while preserving the
+behavior for the common cases.
+* [ENHANCEMENT] We updated the names of the keys used by SimpleSqlalchemyDatasource to be more consistent with names used in other DataConnector configurations. "introspection" is now "inferred_assets" and "tables" is now "assets"
 
 0.13.5
 -----------------

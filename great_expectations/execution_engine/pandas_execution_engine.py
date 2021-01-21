@@ -17,6 +17,8 @@ from great_expectations.datasource.types import (
 )
 from great_expectations.datasource.util import S3Url
 
+from .pandas_batch_data import PandasBatchData
+
 try:
     import boto3
 except ImportError:
@@ -26,17 +28,11 @@ from ..core.batch import BatchMarkers
 from ..core.id_dict import BatchSpec
 from ..datasource.util import hash_pandas_dataframe
 from ..exceptions import BatchSpecError, GreatExpectationsError, ValidationError
-from .execution_engine import ExecutionEngine, MetricDomainTypes
+from .execution_engine import BatchData, ExecutionEngine, MetricDomainTypes
 
 logger = logging.getLogger(__name__)
 
 HASH_THRESHOLD = 1e9
-
-
-class PandasBatchData(pd.DataFrame):
-    # @property
-    def row_count(self):
-        return self.shape[0]
 
 
 class PandasExecutionEngine(ExecutionEngine):
@@ -103,6 +99,17 @@ Notes:
         super().configure_validator(validator)
         validator.expose_dataframe_methods = True
 
+    def load_batch_data(self, batch_id: str, batch_data: Any) -> None:
+        if isinstance(batch_data, pd.DataFrame):
+            batch_data = PandasBatchData(self, batch_data)
+        elif isinstance(batch_data, PandasBatchData):
+            pass
+        else:
+            raise GreatExpectationsError(
+                "PandasExecutionEngine requires batch data that is either a DataFrame or a PandasBatchData object"
+            )
+        super().load_batch_data(batch_id=batch_id, batch_data=batch_data)
+
     def get_batch_data_and_markers(
         self, batch_spec: BatchSpec
     ) -> Tuple[Any, BatchMarkers]:  # batch_data
@@ -117,7 +124,7 @@ Notes:
 
         if isinstance(batch_spec, RuntimeDataBatchSpec):
             # batch_data != None is already checked when RuntimeDataBatchSpec is instantiated
-            batch_data = batch_spec.batch_data
+            df = batch_spec.batch_data
             batch_spec.batch_data = "PandasDataFrame"
 
         elif isinstance(batch_spec, PathBatchSpec):
@@ -127,7 +134,7 @@ Notes:
             path: str = batch_spec["path"]
             reader_fn: Callable = self._get_reader_fn(reader_method, path)
 
-            batch_data = reader_fn(path, **reader_options)
+            df = reader_fn(path, **reader_options)
 
         elif isinstance(batch_spec, S3BatchSpec):
             if self._s3 is None:
@@ -148,7 +155,7 @@ Notes:
                 )
             )
             reader_fn = self._get_reader_fn(reader_method, s3_url.key)
-            batch_data = reader_fn(
+            df = reader_fn(
                 StringIO(
                     s3_object["Body"]
                     .read()
@@ -161,11 +168,11 @@ Notes:
                 f"batch_spec must be of type RuntimeDataBatchSpec, PathBatchSpec, or S3BatchSpec, not {batch_spec.__class__.__name__}"
             )
 
-        batch_data = self._apply_splitting_and_sampling_methods(batch_spec, batch_data)
-        if batch_data.memory_usage().sum() < HASH_THRESHOLD:
-            batch_markers["pandas_data_fingerprint"] = hash_pandas_dataframe(batch_data)
+        df = self._apply_splitting_and_sampling_methods(batch_spec, df)
+        if df.memory_usage().sum() < HASH_THRESHOLD:
+            batch_markers["pandas_data_fingerprint"] = hash_pandas_dataframe(df)
 
-        typed_batch_data = self._get_typed_batch_data(batch_data)
+        typed_batch_data = PandasBatchData(execution_engine=self, dataframe=df)
 
         return typed_batch_data, batch_markers
 
@@ -181,10 +188,6 @@ Notes:
             batch_data = sampling_fn(batch_data, **sampling_kwargs)
         return batch_data
 
-    def _get_typed_batch_data(self, batch_data):
-        typed_batch_data = PandasBatchData(batch_data)
-        return typed_batch_data
-
     @property
     def dataframe(self):
         """Tests whether or not a Batch has been loaded. If the loaded batch does not exist, raises a
@@ -196,7 +199,7 @@ Notes:
                 "Batch has not been loaded - please run load_batch_data() to load a batch."
             )
 
-        return self.active_batch_data
+        return self.active_batch_data.dataframe
 
     def _get_reader_fn(self, reader_method=None, path=None):
         """Static helper for parsing reader types. If reader_method is not provided, path will be used to guess the
@@ -298,14 +301,14 @@ Notes:
         if batch_id is None:
             # We allow no batch id specified if there is only one batch
             if self.active_batch_data_id is not None:
-                data = self.active_batch_data
+                data = self.active_batch_data.dataframe
             else:
                 raise ValidationError(
                     "No batch is specified, but could not identify a loaded batch."
                 )
         else:
             if batch_id in self.loaded_batch_data_dict:
-                data = self.loaded_batch_data_dict[batch_id]
+                data = self.loaded_batch_data_dict[batch_id].dataframe
             else:
                 raise ValidationError(f"Unable to find batch with batch_id {batch_id}")
 

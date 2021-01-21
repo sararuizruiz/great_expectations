@@ -210,7 +210,7 @@ def test_config_variables_in_test_yaml_config(empty_data_context, sa):
 class_name: SimpleSqlalchemyDatasource
 connection_string: sqlite:///${db_file}
 
-introspection:
+inferred_assets:
     ${data_connector_name}:
         data_asset_name_suffix: ${suffix}
         sampling_method: _sample_using_limit
@@ -256,7 +256,7 @@ credentials:
     port: 5432
     database: test_ci
 
-introspection:
+inferred_assets:
     whole_table_with_limits:
         sampling_method: _sample_using_limit
         sampling_kwargs:
@@ -388,7 +388,7 @@ data_connectors:
     )
     assert my_batch.batch_definition["data_asset_name"] == "A"
 
-    df_data = my_batch.data
+    df_data = my_batch.data.dataframe
     assert df_data.shape == (10, 10)
     df_data["date"] = df_data.apply(
         lambda row: datetime.datetime.strptime(row["date"], "%Y-%m-%d").date(), axis=1
@@ -543,9 +543,7 @@ data_connectors:
     )
     assert my_batch.batch_definition["data_asset_name"] == "A"
 
-    my_batch.head()
-
-    df_data = my_batch.data
+    df_data = my_batch.data.dataframe
     assert df_data.shape == (10, 10)
     df_data["date"] = df_data.apply(
         lambda row: datetime.datetime.strptime(row["date"], "%Y-%m-%d").date(), axis=1
@@ -580,7 +578,8 @@ data_connectors:
                 "hash_value": "f",
             },
         },
-        create_expectation_suite_with_name="my_expectations",
+        expectation_suite_name="my_expectations",
+        overwrite_existing_expectation_suite=True,
     )
     my_evr = my_validator.expect_column_values_to_be_between(
         column="d", min_value=1, max_value=31

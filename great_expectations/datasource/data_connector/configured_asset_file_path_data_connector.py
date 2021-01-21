@@ -82,21 +82,8 @@ class ConfiguredAssetFilePathDataConnector(FilePathDataConnector):
             self.assets[name] = new_asset
 
     def _build_asset_from_config(self, name: str, config: dict):
-        runtime_environment: dict = {"name": name, "data_connector": self}
-        asset: Asset = instantiate_class_from_config(
-            config=config,
-            runtime_environment=runtime_environment,
-            config_defaults={
-                "module_name": "great_expectations.datasource.data_connector.asset",
-                "class_name": "Asset",
-            },
-        )
-        if not asset:
-            raise ge_exceptions.ClassInstantiationError(
-                module_name="great_expectations.datasource.data_connector.asset",
-                package_name=None,
-                class_name=config["class_name"],
-            )
+        """Build an Asset using the provided configuration and return the newly-built Asset."""
+        asset = Asset(name=name, **config)
         return asset
 
     def get_available_data_asset_names(self) -> List[str]:
