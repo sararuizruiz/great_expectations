@@ -74,10 +74,10 @@ stages:
 #            displayName: 'Build Gallery'
 
           - task: UploadS3
-            Bucket Name: superconductive-public
-            Source Folder: assets/scripts/
-            Target Folder: static/gallery/
-            Filename Patterns:
+            BucketName: superconductive-public
+            SourceFolder: assets/scripts/
+            TargetFolder: static/gallery/
+            FilenamePatterns:
               - "*.json"
 
       - job: deploy_experimental
