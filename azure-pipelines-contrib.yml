@@ -44,7 +44,7 @@ stages:
 
       - job: build_gallery
         dependsOn: [changes, test]
-        # condition: and(succeeded(), eq(dependencies.changes.outputs['CheckChanges.ExperimentalChanged'], true), eq(variables.isDevelop, true))
+        condition: and(succeeded(), eq(dependencies.changes.outputs['CheckChanges.ExperimentalChanged'], true), eq(variables.isDevelop, true))
         variables:
           GE_pytest_pip_opts: '--requirement requirements-dev-util.txt --requirement requirements-dev-spark.txt --requirement requirements-dev-sqlalchemy.txt --requirement requirements-dev-test.txt'
           GE_pytest_opts: ''
