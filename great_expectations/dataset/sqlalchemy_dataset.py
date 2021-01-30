@@ -237,6 +237,14 @@ class MetaSqlAlchemyDataset(Dataset):
 
             count_results: dict = dict(self.engine.execute(count_query).fetchone())
 
+            update_query = self._get_update_query_generic_sqlalchemy(
+                result_format.get("result_update_column") or 'error',
+                expected_condition=expected_condition,
+                ignore_values_condition=ignore_values_condition,
+            )
+
+            self.engine.execute(update_query)
+
             # Handle case of empty table gracefully:
             if (
                 "element_count" not in count_results
@@ -422,6 +430,23 @@ class MetaSqlAlchemyDataset(Dataset):
                 ).label("unexpected_count"),
             ]
         ).select_from(self._table)
+
+    def _get_update_query_generic_sqlalchemy(
+        self,
+        col,
+        expected_condition: BinaryExpression,
+        ignore_values_condition: BinaryExpression,
+    ) -> Select:
+        self._table.append_column(sa.Column(col, sa.Integer))
+        values = {}
+        values[col] = 1
+        return (
+            sa.update(self._table).
+            where(sa.and_(
+                    sa.not_(expected_condition), sa.not_(ignore_values_condition)
+                )).
+            values(**values)
+        )
 
 
 class SqlAlchemyDataset(MetaSqlAlchemyDataset):
