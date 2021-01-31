@@ -437,7 +437,7 @@ class MetaSqlAlchemyDataset(Dataset):
         expected_condition: BinaryExpression,
         ignore_values_condition: BinaryExpression,
     ) -> Select:
-        self._table.append_column(sa.Column(col, sa.Integer))
+#        self._table.append_column(sa.Column(col, sa.Integer))
         values = {}
         values[col] = 1
         return (
